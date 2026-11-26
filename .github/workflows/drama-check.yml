@@ -1,0 +1,54 @@
+name: Drama integration checks
+
+on:
+  push:
+    paths:
+      - 'drama/**'
+      - 'scripts/**'
+      - 'tests/**'
+      - 'voice_clone_app.py'
+      - '.github/workflows/drama-check.yml'
+  pull_request:
+    paths:
+      - 'drama/**'
+      - 'scripts/**'
+      - 'tests/**'
+      - 'voice_clone_app.py'
+      - '.github/workflows/drama-check.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  cpu-build-and-ui:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 25
+    env:
+      GRADIO_ANALYTICS_ENABLED: 'False'
+      PYTHONUTF8: '1'
+      UV_PROJECT_ENVIRONMENT: ${{ github.workspace }}/.runtime/drama/venv
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - name: Install locked UI environment
+        run: |
+          python3 -m venv "$RUNNER_TEMP/drama-tools"
+          "$RUNNER_TEMP/drama-tools/bin/pip" install uv==0.10.4
+          "$RUNNER_TEMP/drama-tools/bin/uv" sync --project drama --frozen --python 3.11
+      - name: Test protocol, inputs, and both UIs
+        run: |
+          .runtime/drama/venv/bin/python -m unittest discover -s tests -v
+          .runtime/drama/venv/bin/python -m drama.app --check-ui
+          .runtime/drama/venv/bin/python voice_clone_app.py --check-ui
+          bash -n scripts/runpod_start.sh scripts/runpod_drama_start.sh scripts/launch_drama.sh
+      - name: Fetch pinned source and verify published patch
+        run: python3 -m drama.bootstrap --source-only
+      - name: Compile patched speech.cpp on CPU
+        run: |
+          cmake -S .runtime/drama/speech.cpp -B .runtime/drama/speech.cpp/build -G Ninja \
+            -DCMAKE_BUILD_TYPE=Release -DGGML_CUDA=OFF -DGGML_VULKAN=OFF
+          cmake --build .runtime/drama/speech.cpp/build --target speech-cli -j 2
+          .runtime/drama/speech.cpp/build/speech --help
+          .runtime/drama/speech.cpp/build/speech devices --json

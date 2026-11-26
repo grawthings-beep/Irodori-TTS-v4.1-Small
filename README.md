@@ -4,6 +4,8 @@
 
 公式 [Aratako/Irodori-TTS](https://github.com/Aratako/Irodori-TTS) の推論処理をそのまま利用しています。音声変換・リアルタイムボイスチェンジャーではなく、参考音声から話者の声を条件付けして文章を新たに読み上げます。
 
+**Drama 3の演技タグ・音声クローンを使う場合は [Dramaの導入手順](README_DRAMA.md) を参照してください。** 同じPodの7861番ポートに追加でき、Irodoriとは専用環境を分けています。両方の画面にGPU解放ボタンがあり、モデルを切り替えて使えます。
+
 ## 1. RunPodを用意
 
 - GPU付きPod。初めての構成案は **RTX 4090 24GBなど、VRAM 24GBのGPU**。これは余裕を持たせるための選定で、実測した最低要件ではありません。
@@ -64,7 +66,7 @@ cd /workspace && (test -d Irodori-TTS-v4.1-Small || git clone https://github.com
 ローカルでは7件のテストで入力検証、日本語UI構築、公式のリクエスト定義との互換性、参考音声の受け渡しと保存処理を検証済みです（音声合成部分はテスト用の代替処理）。Bash構文と、HTTP経由でのログイン必須・誤パスワード拒否・ログイン後のUI応答も確認しました。**RunPodでの依存環境全体のインストール、モデルダウンロード・GPUによる音声生成・声の再現品質は未検証です。** 起動時に `scripts/preflight.py` が実際のIrodori/DACVAEインポート、CUDA行列演算、音声デコーダーを検証し、失敗した場合はサーバーを起動しません。
 
 ```bash
-uv run --no-sync python -m unittest discover -s tests -v
+uv run --no-sync python -m unittest discover -s tests -p test_voice_clone.py -v
 uv run --no-sync python voice_clone_app.py --check-ui
 ```
 
@@ -76,4 +78,4 @@ uv run --no-sync python voice_clone_app.py --check-ui
 - MIT License: [LICENSE](LICENSE)。元の著作権表示を保持しています。
 - [RunPodのポート公開手順](https://docs.runpod.io/pods/configuration/expose-ports)
 
-追加ファイルは `voice_clone_app.py`、`scripts/`、`tests/` とこの日本語手順です。公式の推論エンジン、`pyproject.toml`、`uv.lock` は変更していません。SDXL/LoRA用の依存パッケージ固定は使用しません。
+追加ファイルは `voice_clone_app.py`、`drama/`、`scripts/`、`tests/`、CI設定と日本語手順です。Irodori公式の推論エンジン、ルートの`pyproject.toml`、`uv.lock`は変更していません。SDXL/LoRA用の依存パッケージ固定は使用しません。Dramaのモデルと外部パッチのライセンスは[別途記載](README_DRAMA.md#出典とライセンス)しています。

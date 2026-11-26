@@ -132,6 +132,14 @@ def generate(
         raise gr.Error(f"生成に失敗しました。起動ログを確認してください。\n{exc}") from exc
 
 
+def unload_model():
+    from irodori_tts.inference_runtime import clear_cached_runtime
+
+    with GENERATION_LOCK:
+        clear_cached_runtime()
+    return "IrodoriのGPUを解放しました。次回生成時に再び読み込みます。"
+
+
 def build_ui():
     with gr.Blocks(title="Irodori 音声クローン") as demo:
         gr.Markdown("# Irodori 音声クローン\n参考音声の声で、好きな日本語の文章を読み上げます。")
@@ -185,6 +193,7 @@ def build_ui():
                     lines=4,
                     interactive=False,
                 )
+                release = gr.Button("IrodoriのGPUを解放する")
         gr.Markdown(
             "Irodori-TTS v4.1-Small · 初回生成時にモデルをダウンロードします。2回目からは読み込んだモデルを再利用します。"
         )
@@ -195,6 +204,7 @@ def build_ui():
             concurrency_limit=1,
             api_name=False,
         )
+        release.click(unload_model, outputs=status, concurrency_limit=1, api_name=False)
     return demo.queue(default_concurrency_limit=1, max_size=8)
 
 

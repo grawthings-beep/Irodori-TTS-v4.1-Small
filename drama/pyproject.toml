@@ -1,0 +1,6 @@
+[project]
+name = "drama-runpod-ui"
+version = "0.1.0"
+description = "Japanese UI for the pinned Drama 3 speech.cpp runtime"
+requires-python = ">=3.11,<3.13"
+dependencies = ["gradio==6.6.0"]
